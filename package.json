@@ -1,0 +1,30 @@
+{
+  "name": "mcp-cassandra",
+  "version": "0.2.0",
+  "description": "Model Context Protocol server for Apache Cassandra database operations",
+  "author": "tejasvinu",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "mcp-cassandra": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && mcp-build",
+    "watch": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "mcp-framework": "^0.2.2",
+    "cassandra-driver": "^4.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.19.0"
+  }
+}
