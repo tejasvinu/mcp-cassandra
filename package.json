@@ -1,6 +1,6 @@
 {
   "name": "mcp-cassandra",
-  "version": "0.2.0",
+  "version": "0.3.7",
   "description": "Model Context Protocol server for Apache Cassandra database operations",
   "author": "tejasvinu",
   "license": "MIT",

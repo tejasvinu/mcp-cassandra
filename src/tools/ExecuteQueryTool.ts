@@ -81,7 +81,7 @@ class ExecuteQueryTool extends MCPTool<ExecuteQueryInput> {
       };
     } catch (error: any) {
       console.error(`Error executing query: ${input.query}`, error);
-      return `Failed to execute query: ${error.message}`;
+      return { error: `Failed to execute query: ${error.message}` };
     }
   }
 }

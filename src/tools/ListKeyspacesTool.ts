@@ -34,13 +34,13 @@ class ListKeyspacesTool extends MCPTool<ListKeyspacesInput> {
       }
 
       if (keyspaces.length === 0) {
-        return "No keyspaces found.";
+        return { message: "No keyspaces found." };
       }
       
-      return keyspaces.sort();
+      return { keyspaces: keyspaces.sort() };
     } catch (error: any) {
       console.error("Error listing keyspaces:", error);
-      return `Failed to list keyspaces: ${error.message}`;
+      return { error: `Failed to list keyspaces: ${error.message}` };
     }
   }
 }

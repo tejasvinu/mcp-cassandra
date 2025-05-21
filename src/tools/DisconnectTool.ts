@@ -11,9 +11,9 @@ class DisconnectTool extends MCPTool<Record<string, never>> {
   async execute() {
     try {
       await disconnectFromCassandra();
-      return "Successfully disconnected from Cassandra.";
+      return { message: "Successfully disconnected from Cassandra." };
     } catch (error: any) {
-      return `Failed to disconnect: ${error.message}`;
+      return { message: `Failed to disconnect: ${error.message}` };
     }
   }
 }

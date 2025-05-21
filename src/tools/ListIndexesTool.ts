@@ -30,7 +30,7 @@ class ListIndexesTool extends MCPTool<ListIndexesInput> {
       const keyspaceResult = await client.execute(keyspaceQuery, [input.keyspaceName], { prepare: true });
       
       if (keyspaceResult.rows.length === 0) {
-        return `Keyspace '${input.keyspaceName}' not found.`;
+        return { message: `Keyspace '${input.keyspaceName}' not found.` };
       }
       
       // Query for secondary indexes
@@ -91,13 +91,13 @@ class ListIndexesTool extends MCPTool<ListIndexesInput> {
         const tableSpecificMessage = input.tableName ? 
           `No indexes or materialized views found for table '${input.keyspaceName}.${input.tableName}'.` :
           `No indexes or materialized views found in keyspace '${input.keyspaceName}'.`;
-        return tableSpecificMessage;
+        return { message: tableSpecificMessage };
       }
       
       return result;
     } catch (error: any) {
       console.error(`Error listing indexes for keyspace ${input.keyspaceName}:`, error);
-      return `Failed to list indexes: ${error.message}`;
+      return { error: `Failed to list indexes: ${error.message}` };
     }
   }
 }

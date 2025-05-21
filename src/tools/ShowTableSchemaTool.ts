@@ -30,7 +30,7 @@ class ShowTableSchemaTool extends MCPTool<ShowTableSchemaInput> {
       const tableCheck = await client.execute(tableCheckQuery, [input.keyspaceName, input.tableName], { prepare: true });
       
       if (tableCheck.rows.length === 0) {
-        return `Table '${input.keyspaceName}.${input.tableName}' not found.`;
+        return { message: `Table '${input.keyspaceName}.${input.tableName}' not found.` };
       }
       
       const tableInfo = tableCheck.rows[0];
@@ -40,7 +40,7 @@ class ShowTableSchemaTool extends MCPTool<ShowTableSchemaInput> {
       const columnsResult = await client.execute(columnsQuery, [input.keyspaceName, input.tableName], { prepare: true });
       
       if (columnsResult.rows.length === 0) {
-        return `No columns found for table '${input.keyspaceName}.${input.tableName}'.`;
+        return { message: `No columns found for table '${input.keyspaceName}.${input.tableName}'.` };
       }
       
       // Get primary key information
@@ -137,10 +137,10 @@ class ShowTableSchemaTool extends MCPTool<ShowTableSchemaInput> {
       
       createStatement += ';';
       
-      return createStatement;
+      return { schema: createStatement };
     } catch (error: any) {
       console.error(`Error getting schema for ${input.keyspaceName}.${input.tableName}:`, error);
-      return `Failed to get schema for table '${input.keyspaceName}.${input.tableName}': ${error.message}`;
+      return { error: `Failed to get schema for table '${input.keyspaceName}.${input.tableName}': ${error.message}` };
     }
   }
 }

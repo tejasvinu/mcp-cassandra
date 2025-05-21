@@ -1,6 +1,7 @@
 import { MCPTool } from "mcp-framework";
 import { z } from "zod";
 import { getCassandraClient } from "../cassandra-client.js";
+import { types } from 'cassandra-driver';
 // Assuming 'metadata' is imported but its members are problematic
 // import { metadata } from 'cassandra-driver'; 
 
@@ -31,27 +32,61 @@ class DescribeTableTool extends MCPTool<DescribeTableInput> {
     }
     
     try {
-      // First try to use the inspect method if available
-      if (typeof type.inspect === 'function') {
-        return type.inspect();
+      // For string types, just return them directly
+      if (typeof type === 'string') {
+        return type;
       }
       
-      // Fall back to name property
-      if (type.name) {
-        return type.name;
+      // For object types with code property (likely a Cassandra datatype)
+      if (type && typeof type === 'object') {
+        if (type.code !== undefined) {
+          // Map type code to name when possible
+          const typeCode = type.code;
+          if (types && types.dataTypes) {
+            for (const [name, code] of Object.entries(types.dataTypes)) {
+              if (code === typeCode) {
+                return name.toLowerCase();
+              }
+            }
+          }
+          return `type_${typeCode}`;
+        }
+        
+        // Try to access name property
+        if (type.name) {
+          return type.name;
+        }
+        
+        // Handle map types specially
+        if (type.info && type.info.keyType && type.info.valueType) {
+          const keyType = this.getColumnTypeString(type.info.keyType);
+          const valueType = this.getColumnTypeString(type.info.valueType);
+          return `map<${keyType}, ${valueType}>`;
+        }
+        
+        // Handle list types
+        if (type.info && type.info.elementType) {
+          const elementType = this.getColumnTypeString(type.info.elementType);
+          return `list<${elementType}>`;
+        }
+        
+        // Handle set types
+        if (type.info && Array.isArray(type.info)) {
+          return `set<${this.getColumnTypeString(type.info[0])}>`;
+        }
+        
+        // Handle tuple types
+        if (type.info && Array.isArray(type.info.types)) {
+          const tupleTypes = type.info.types.map((t: any) => this.getColumnTypeString(t)).join(', ');
+          return `tuple<${tupleTypes}>`;
+        }
       }
       
-      // Try to get the code property
-      if (type.code !== undefined) {
-        return `type_${type.code}`;
-      }
-      
-      // Last resort, convert the whole object to string
-      return type.toString();
+      // Last resort, convert to string
+      return String(type);
     } catch (error) {
       console.error('Error converting column type to string:', error);
-      // If all else fails, use the constructor name or 'unknown'
-      return type.constructor ? type.constructor.name : 'unknown';
+      return 'unknown';
     }
   }
 
@@ -63,7 +98,7 @@ class DescribeTableTool extends MCPTool<DescribeTableInput> {
       const tableResult = await client.execute(query, [input.keyspaceName, input.tableName], { prepare: true });
       
       if (tableResult.rows.length === 0) {
-        return `Table '${input.keyspaceName}.${input.tableName}' not found.`;
+        return { message: `Table '${input.keyspaceName}.${input.tableName}' not found.` };
       }
       
       // Get column information
@@ -87,7 +122,8 @@ class DescribeTableTool extends MCPTool<DescribeTableInput> {
       // Format columns with type information
       const columns = columnsResult.rows.map(col => ({
         name: col.column_name,
-        type: col.type,
+        // Use the type string directly from column type 
+        type: this.getColumnTypeString(col.type),
         position: col.position,
         kind: partitionKeys.includes(col.column_name) ? 'partition_key' : 
               clusteringKeys.includes(col.column_name) ? 'clustering_key' : 'regular'
@@ -139,7 +175,7 @@ class DescribeTableTool extends MCPTool<DescribeTableInput> {
         const tableCheck = await client.execute(tableCheckQuery, [input.keyspaceName, input.tableName], { prepare: true });
         
         if (tableCheck.rows.length === 0) {
-          return `Table '${input.keyspaceName}.${input.tableName}' not found.`;
+          return { message: `Table '${input.keyspaceName}.${input.tableName}' not found.` };
         }
         
         // Get column information
@@ -164,10 +200,10 @@ class DescribeTableTool extends MCPTool<DescribeTableInput> {
           .sort((a, b) => a.position - b.position)
           .map(key => key.column_name);
         
-        // Format columns with type information
+        // Format columns with type information - now using string directly
         const columns = columnsResult.rows.map(col => ({
           name: col.column_name,
-          type: col.type,
+          type: col.type, // Already a string in system_schema.columns
           kind: partitionKeys.includes(col.column_name) ? 'partition_key' : 
                 clusteringKeys.includes(col.column_name) ? 'clustering_key' : 'regular'
         }));
@@ -181,7 +217,7 @@ class DescribeTableTool extends MCPTool<DescribeTableInput> {
         };
       } catch (fallbackError: any) {
         console.error(`Fallback error describing table ${input.keyspaceName}.${input.tableName}:`, fallbackError);
-        return `Failed to describe table '${input.keyspaceName}.${input.tableName}': ${error.message}`;
+        return { error: `Failed to describe table '${input.keyspaceName}.${input.tableName}': ${error.message}` };
       }
     }
   }

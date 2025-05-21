@@ -8,8 +8,11 @@ class ConnectTool extends MCPTool<CassandraConnectionParams> {
 
   schema = {
     contactPoints: {
-      type: z.array(z.string().nonempty()).min(1),
-      description: "An array of contact points (IP addresses or hostnames) for the Cassandra cluster."
+      type: z.array(z.string()),
+      description: "An array of contact points (IP addresses or hostnames) for the Cassandra cluster.",
+      items: {
+        type: "string"
+      }
     },
     localDataCenter: {
       type: z.string(),
@@ -26,15 +29,19 @@ class ConnectTool extends MCPTool<CassandraConnectionParams> {
     password: {
       type: z.string().optional(),
       description: "Optional password for Cassandra authentication."
+    },
+    port: {
+      type: z.number().optional(),
+      description: "Optional connection port (default: 9042)."
     }
   };
 
   async execute(input: CassandraConnectionParams) {
     try {
       await connectToCassandra(input);
-      return "Successfully connected to Cassandra.";
+      return { message: "Successfully connected to Cassandra." };
     } catch (error: any) {
-      return `Failed to connect: ${error.message}`;
+      return { message: `Failed to connect: ${error.message}` };
     }
   }
 }
